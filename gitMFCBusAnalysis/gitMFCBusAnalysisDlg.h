@@ -3,6 +3,7 @@
 //
 
 #pragma once
+#include "afxwin.h"
 
 
 // CgitMFCBusAnalysisDlg ¶Ô»°¿ò
@@ -29,4 +30,8 @@ protected:
 	afx_msg void OnPaint();
 	afx_msg HCURSOR OnQueryDragIcon();
 	DECLARE_MESSAGE_MAP()
+public:
+	CListBox m_CanIdList;
+	CListBox m_CanDataList;
+	afx_msg void OnBnClickedButtonCheckList();
 };
