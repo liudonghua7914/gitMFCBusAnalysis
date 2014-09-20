@@ -54,6 +54,9 @@ private:
 	struct  CAN_MSG *m_pMsgHead;
 	struct  CAN_MSG *m_pMsgNew;
 	struct  CAN_MSG *m_pMsgCur;
+	UINT m_CanIDIndexMax;
+
+	struct  CAN_MSG *m_pCanList[100];
 	
 public:
 	afx_msg void OnBnClickedRadioCheckClassfied();
@@ -62,4 +65,5 @@ public:
 	afx_msg void OnFileBuf(char *p,UINT len);
 	afx_msg void checkIDName(char *p,UINT len);
 	afx_msg void showList(void);
+	afx_msg void OnLbnSelchangeListCanIdChange();
 };

@@ -72,6 +72,7 @@ BEGIN_MESSAGE_MAP(CgitMFCBusAnalysisDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_RADIO1, &CgitMFCBusAnalysisDlg::OnBnClickedRadioCheckClassfied)
 	ON_BN_CLICKED(IDC_RADIO2, &CgitMFCBusAnalysisDlg::OnBnClickedRadioFilter)
 	ON_BN_CLICKED(IDC_BUTTON1, &CgitMFCBusAnalysisDlg::OnBnClickedButtonOpenFile)
+	ON_LBN_SELCHANGE(IDC_LIST2, &CgitMFCBusAnalysisDlg::OnLbnSelchangeListCanIdChange)
 END_MESSAGE_MAP()
 
 
@@ -112,6 +113,7 @@ BOOL CgitMFCBusAnalysisDlg::OnInitDialog()
 	m_Select = 0x01;
 	m_pMsgHead = NULL;
 	m_pOpenFileBuf = NULL;
+	m_CanIDIndexMax = 0;
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
 
@@ -197,16 +199,26 @@ void CgitMFCBusAnalysisDlg::OnBnClickedButtonOpenFile()
 	BOOL bOpen = FALSE;
 	CFileDialog UpdateFileDlg(TRUE);
 	UpdateFileDlg.m_ofn.lpstrFilter = __T("All File (*.*)\0*.*\0*.bin\0*.bin\0Text(*.txt)\0*.txt\0\0");
-
+	m_CanIdList.ResetContent();
 	if (IDOK  == UpdateFileDlg.DoModal())
 	{
 		m_cFilePatchName = UpdateFileDlg.GetPathName();
+		m_CanIDIndexMax = 0;
 
+		if (m_pMsgHead)
+		{
+			free(m_pMsgHead);
+		}
+
+		m_pMsgHead = NULL; 
+		m_pMsgNew = NULL;
+		m_pMsgNew = NULL;
+	
 		CFile OpenFile(m_cFilePatchName,CFile::modeRead);
 		m_OpenFileLength = OpenFile.GetLength();
 		if(m_OpenFileLength)
 		{
-			if (NULL == m_pOpenFileBuf)
+			//if (NULL == m_pOpenFileBuf)
 			{
 				m_pOpenFileBuf = new char[m_OpenFileLength + 1];
 				m_pOpenFileBuf[m_OpenFileLength] = '\0';
@@ -236,6 +248,7 @@ void CgitMFCBusAnalysisDlg::checkIDName(char *p,UINT len)
 	UINT cnt = 0;
 	char idname[10];
 	BYTE idnamecnt = 0;
+	BOOL bTre = FALSE;
 	memset(idname,'\0',10);
 	for(i = 0;i < len;i++)
 	{
@@ -270,6 +283,7 @@ void CgitMFCBusAnalysisDlg::checkIDName(char *p,UINT len)
 		m_pMsgNew->index = 0;
 		m_pMsgHead = m_pMsgNew;
 		m_pMsgCur = m_pMsgNew;
+		m_pCanList[0] = m_pMsgHead;
 	}
 	else
 	{
@@ -278,12 +292,20 @@ void CgitMFCBusAnalysisDlg::checkIDName(char *p,UINT len)
 		{
 			if(!memcmp(pt->idName,m_pMsgNew->idName,strlen(m_pMsgNew->idName)))
 			{			
+				m_pMsgNew->index = pt->index;
+				bTre = TRUE;
 				break;
 			}
 			pt = pt->next;
-			cnt++;
 		}
-		m_pMsgNew->index = cnt;
+
+		if (!bTre)
+		{
+			m_CanIDIndexMax = m_CanIDIndexMax + 1;
+			m_pCanList[m_CanIDIndexMax] = m_pMsgNew;
+			m_pMsgNew->index = m_CanIDIndexMax;
+		}
+
 		m_pMsgCur->next = m_pMsgNew;
 		m_pMsgCur = m_pMsgNew;
 	}
@@ -292,6 +314,7 @@ void CgitMFCBusAnalysisDlg::checkIDName(char *p,UINT len)
 void CgitMFCBusAnalysisDlg::OnFileBuf(char *p,UINT len)
 {
 	UINT i = 0;
+	
 	BOOL bNewLine = FALSE;
 	char idname[10];
 	char idmsg[128];
@@ -318,33 +341,67 @@ void CgitMFCBusAnalysisDlg::OnFileBuf(char *p,UINT len)
 		}
 	}
 	showList();
+	m_CanIdList.SetCurSel(0);
 }
 
 
 void CgitMFCBusAnalysisDlg::showList(void)
 {
-	struct  CAN_MSG *pt;
 	WCHAR *pwDebug = NULL;
 	int copyLen = 0;
-
+	UINT i = 0;
+	struct  CAN_MSG *pt;
 	pt = m_pMsgHead;
-	while(pt)
+	for (i = 0;i < m_CanIDIndexMax + 1;i++)
 	{
-		copyLen = MultiByteToWideChar(CP_ACP,0,(char *)pt->idName,-1,NULL,0);
+		copyLen = MultiByteToWideChar(CP_ACP,0,(char *)m_pCanList[i]->idName,-1,NULL,0);
 		pwDebug = new WCHAR[copyLen + 1];
 		pwDebug[copyLen] = '\0';
-		MultiByteToWideChar(CP_ACP,0,(char *)pt->idName,-1,pwDebug,copyLen);
+		MultiByteToWideChar(CP_ACP,0,(char *)m_pCanList[i]->idName,-1,pwDebug,copyLen);
 		m_CanIdList.AddString(pwDebug);
-		pt = pt->next;
 	}
 
-
-
-
-
-
-
+	while(pt)
+	{
+		if(0 == pt->index)
+		{
+			copyLen = MultiByteToWideChar(CP_ACP,0,(char *)pt->fullMsg,-1,NULL,0);
+			pwDebug = new WCHAR[copyLen + 1];
+			pwDebug[copyLen] = '\0';
+			MultiByteToWideChar(CP_ACP,0,(char *)pt->fullMsg,-1,pwDebug,copyLen);
+			m_CanDataList.AddString(pwDebug);
+		}		
+		pt = pt->next;
+	}
 	
+}
+
+void CgitMFCBusAnalysisDlg::OnLbnSelchangeListCanIdChange()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	int index = 0;
+	WCHAR *pwDebug = NULL;
+	int copyLen = 0;
+	struct  CAN_MSG *pt;
+	struct  CAN_MSG *qt;
+	index = m_CanIdList.GetCurSel();
+	pt = m_pMsgHead;
+	m_CanDataList.ResetContent();
 	
-	
+	pt = m_pMsgHead;
+	qt = m_pCanList[index];
+#if 1
+	while(pt)
+	{
+		if(qt->index == pt->index)
+		{
+			copyLen = MultiByteToWideChar(CP_ACP,0,(char *)pt->fullMsg,-1,NULL,0);
+			pwDebug = new WCHAR[copyLen + 1];
+			pwDebug[copyLen] = '\0';
+			MultiByteToWideChar(CP_ACP,0,(char *)pt->fullMsg,-1,pwDebug,copyLen);
+			m_CanDataList.AddString(pwDebug);
+		}		
+		pt = pt->next;
+	}
+#endif
 }
