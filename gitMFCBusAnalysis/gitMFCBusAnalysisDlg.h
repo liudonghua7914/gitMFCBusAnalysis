@@ -61,5 +61,5 @@ public:
 	afx_msg void OnBnClickedButtonOpenFile();
 	afx_msg void OnFileBuf(char *p,UINT len);
 	afx_msg void checkIDName(char *p,UINT len);
-
+	afx_msg void showList(void);
 };

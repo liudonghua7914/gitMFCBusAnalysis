@@ -111,6 +111,7 @@ BOOL CgitMFCBusAnalysisDlg::OnInitDialog()
 	m_Classified.SetCheck(TRUE);
 	m_Select = 0x01;
 	m_pMsgHead = NULL;
+	m_pOpenFileBuf = NULL;
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
 
@@ -230,8 +231,9 @@ void CgitMFCBusAnalysisDlg::OnBnClickedButtonOpenFile()
 
 void CgitMFCBusAnalysisDlg::checkIDName(char *p,UINT len)
 {
-	
+	struct  CAN_MSG *pt;
 	UINT i;
+	UINT cnt = 0;
 	char idname[10];
 	BYTE idnamecnt = 0;
 	memset(idname,'\0',10);
@@ -253,22 +255,38 @@ void CgitMFCBusAnalysisDlg::checkIDName(char *p,UINT len)
 		}
 	}
 
-
 	m_pMsgNew = new (struct CAN_MSG);
-	if(!m_pMsgNew)
+	if(m_pMsgNew)
 	{
-		memcpy(m_pMsgNew->idName,idname,idnamecnt);
+		memset(m_pMsgNew->fullMsg,'\0',128);
+		memset(m_pMsgNew->idName,'\0',10);
+		memcpy(m_pMsgNew->idName,idname,idnamecnt);	
+		memcpy(m_pMsgNew->fullMsg,p,len);
+		m_pMsgNew->next = NULL;
 	}
 
 	if (NULL == m_pMsgHead)
 	{
+		m_pMsgNew->index = 0;
 		m_pMsgHead = m_pMsgNew;
+		m_pMsgCur = m_pMsgNew;
 	}
 	else
 	{
-
+		pt = m_pMsgHead;
+		while(pt)
+		{
+			if(!memcmp(pt->idName,m_pMsgNew->idName,strlen(m_pMsgNew->idName)))
+			{			
+				break;
+			}
+			pt = pt->next;
+			cnt++;
+		}
+		m_pMsgNew->index = cnt;
+		m_pMsgCur->next = m_pMsgNew;
+		m_pMsgCur = m_pMsgNew;
 	}
-	
 }
 
 void CgitMFCBusAnalysisDlg::OnFileBuf(char *p,UINT len)
@@ -287,9 +305,9 @@ void CgitMFCBusAnalysisDlg::OnFileBuf(char *p,UINT len)
 		{
 			bNewLine = TRUE;
 			if (idmsgcnt)
-			{
-				idmsgcnt = 0;
+			{	
 				checkIDName(idmsg,idmsgcnt);
+				idmsgcnt = 0;
 				memset(idmsg,'\0',128);
 			}
 		}
@@ -299,4 +317,34 @@ void CgitMFCBusAnalysisDlg::OnFileBuf(char *p,UINT len)
 			idmsgcnt = (idmsgcnt + 1) % 128;
 		}
 	}
+	showList();
+}
+
+
+void CgitMFCBusAnalysisDlg::showList(void)
+{
+	struct  CAN_MSG *pt;
+	WCHAR *pwDebug = NULL;
+	int copyLen = 0;
+
+	pt = m_pMsgHead;
+	while(pt)
+	{
+		copyLen = MultiByteToWideChar(CP_ACP,0,(char *)pt->idName,-1,NULL,0);
+		pwDebug = new WCHAR[copyLen + 1];
+		pwDebug[copyLen] = '\0';
+		MultiByteToWideChar(CP_ACP,0,(char *)pt->idName,-1,pwDebug,copyLen);
+		m_CanIdList.AddString(pwDebug);
+		pt = pt->next;
+	}
+
+
+
+
+
+
+
+	
+	
+	
 }
