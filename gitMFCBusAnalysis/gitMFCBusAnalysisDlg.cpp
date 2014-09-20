@@ -7,6 +7,8 @@
 #include "gitMFCBusAnalysisDlg.h"
 #include "afxdialogex.h"
 
+
+
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
@@ -59,6 +61,7 @@ void CgitMFCBusAnalysisDlg::DoDataExchange(CDataExchange* pDX)
 	CDialogEx::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_LIST2, m_CanIdList);
 	DDX_Control(pDX, IDC_LIST1, m_CanDataList);
+	DDX_Control(pDX, IDC_RADIO1, m_Classified);
 }
 
 BEGIN_MESSAGE_MAP(CgitMFCBusAnalysisDlg, CDialogEx)
@@ -66,6 +69,9 @@ BEGIN_MESSAGE_MAP(CgitMFCBusAnalysisDlg, CDialogEx)
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
 	ON_BN_CLICKED(IDC_BUTTON3, &CgitMFCBusAnalysisDlg::OnBnClickedButtonCheckList)
+	ON_BN_CLICKED(IDC_RADIO1, &CgitMFCBusAnalysisDlg::OnBnClickedRadioCheckClassfied)
+	ON_BN_CLICKED(IDC_RADIO2, &CgitMFCBusAnalysisDlg::OnBnClickedRadioFilter)
+	ON_BN_CLICKED(IDC_BUTTON1, &CgitMFCBusAnalysisDlg::OnBnClickedButtonOpenFile)
 END_MESSAGE_MAP()
 
 
@@ -102,6 +108,9 @@ BOOL CgitMFCBusAnalysisDlg::OnInitDialog()
 
 	// TODO: 在此添加额外的初始化代码
 
+	m_Classified.SetCheck(TRUE);
+	m_Select = 0x01;
+	m_pMsgHead = NULL;
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
 
@@ -159,4 +168,135 @@ HCURSOR CgitMFCBusAnalysisDlg::OnQueryDragIcon()
 void CgitMFCBusAnalysisDlg::OnBnClickedButtonCheckList()
 {
 	// TODO: 在此添加控件通知处理程序代码
+	m_CheckListDlg.DoModal();
+}
+
+
+void CgitMFCBusAnalysisDlg::OnBnClickedRadioCheckClassfied()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	m_Select = 0x01;
+	GetDlgItem(IDC_BUTTON3)->EnableWindow(FALSE);
+	GetDlgItem(IDC_BUTTON4)->EnableWindow(FALSE);
+}
+
+
+void CgitMFCBusAnalysisDlg::OnBnClickedRadioFilter()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	m_Select = 0x02;
+	GetDlgItem(IDC_BUTTON3)->EnableWindow(TRUE);
+	GetDlgItem(IDC_BUTTON4)->EnableWindow(TRUE);
+}
+
+
+void CgitMFCBusAnalysisDlg::OnBnClickedButtonOpenFile()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	BOOL bOpen = FALSE;
+	CFileDialog UpdateFileDlg(TRUE);
+	UpdateFileDlg.m_ofn.lpstrFilter = __T("All File (*.*)\0*.*\0*.bin\0*.bin\0Text(*.txt)\0*.txt\0\0");
+
+	if (IDOK  == UpdateFileDlg.DoModal())
+	{
+		m_cFilePatchName = UpdateFileDlg.GetPathName();
+
+		CFile OpenFile(m_cFilePatchName,CFile::modeRead);
+		m_OpenFileLength = OpenFile.GetLength();
+		if(m_OpenFileLength)
+		{
+			if (NULL == m_pOpenFileBuf)
+			{
+				m_pOpenFileBuf = new char[m_OpenFileLength + 1];
+				m_pOpenFileBuf[m_OpenFileLength] = '\0';
+				OpenFile.Read(m_pOpenFileBuf,m_OpenFileLength);
+				//关闭文件
+				OpenFile.Close();
+				bOpen = TRUE;
+			}
+
+			if(bOpen)
+			{
+				OnFileBuf(m_pOpenFileBuf,m_OpenFileLength +1);		
+			}
+
+		}
+		else
+		{
+			MessageBox(__T("OpenFile Fail"));
+		}
+	}
+}
+
+void CgitMFCBusAnalysisDlg::checkIDName(char *p,UINT len)
+{
+	
+	UINT i;
+	char idname[10];
+	BYTE idnamecnt = 0;
+	memset(idname,'\0',10);
+	for(i = 0;i < len;i++)
+	{
+		if ((('0' <= p[i]) &&('9' >= p[i])) ||(('a' <= p[i]) &&('z' >= p[i])) || (('A' <= p[i]) &&('Z' >= p[i])))
+		{
+			idname[idnamecnt] =  p[i];
+			idnamecnt = (idnamecnt + 1) % 10;
+		}
+		else
+		{
+			if (8 <= idnamecnt)
+			{
+				i = len;
+				break;
+			}
+			idnamecnt = 0;
+		}
+	}
+
+
+	m_pMsgNew = new (struct CAN_MSG);
+	if(!m_pMsgNew)
+	{
+		memcpy(m_pMsgNew->idName,idname,idnamecnt);
+	}
+
+	if (NULL == m_pMsgHead)
+	{
+		m_pMsgHead = m_pMsgNew;
+	}
+	else
+	{
+
+	}
+	
+}
+
+void CgitMFCBusAnalysisDlg::OnFileBuf(char *p,UINT len)
+{
+	UINT i = 0;
+	BOOL bNewLine = FALSE;
+	char idname[10];
+	char idmsg[128];
+	BYTE idnamecnt = 0;
+	BYTE idmsgcnt = 0;
+	BOOL bID = FALSE;
+	memset(idmsg,'\0',128);
+	for (i = 0;i < len;i++)
+	{
+		if(('\r' == p[i]) || ('\n' == p[i]) || ('\0' == p[i]))
+		{
+			bNewLine = TRUE;
+			if (idmsgcnt)
+			{
+				idmsgcnt = 0;
+				checkIDName(idmsg,idmsgcnt);
+				memset(idmsg,'\0',128);
+			}
+		}
+		else
+		{
+			idmsg[idmsgcnt] = p[i];
+			idmsgcnt = (idmsgcnt + 1) % 128;
+		}
+	}
 }

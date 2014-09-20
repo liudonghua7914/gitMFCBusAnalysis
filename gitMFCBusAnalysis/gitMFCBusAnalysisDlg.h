@@ -5,6 +5,15 @@
 #pragma once
 #include "afxwin.h"
 
+#include "CheckList.h"
+
+struct  CAN_MSG
+{
+	UINT index;
+	char idName[10];
+	char fullMsg[128];
+	struct  CAN_MSG *next;
+};
 
 // CgitMFCBusAnalysisDlg ¶Ô»°¿ò
 class CgitMFCBusAnalysisDlg : public CDialogEx
@@ -34,4 +43,23 @@ public:
 	CListBox m_CanIdList;
 	CListBox m_CanDataList;
 	afx_msg void OnBnClickedButtonCheckList();
+
+private:
+	CCheckList m_CheckListDlg;
+	BYTE m_Select;
+	CButton m_Classified;
+	CString m_cFilePatchName;
+	UINT32 m_OpenFileLength;
+	char *m_pOpenFileBuf;
+	struct  CAN_MSG *m_pMsgHead;
+	struct  CAN_MSG *m_pMsgNew;
+	struct  CAN_MSG *m_pMsgCur;
+	
+public:
+	afx_msg void OnBnClickedRadioCheckClassfied();
+	afx_msg void OnBnClickedRadioFilter();
+	afx_msg void OnBnClickedButtonOpenFile();
+	afx_msg void OnFileBuf(char *p,UINT len);
+	afx_msg void checkIDName(char *p,UINT len);
+
 };

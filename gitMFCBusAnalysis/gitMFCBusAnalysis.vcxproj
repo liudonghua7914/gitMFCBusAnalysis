@@ -99,6 +99,7 @@
     <None Include="res\gitMFCBusAnalysis.rc2" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CheckList.h" />
     <ClInclude Include="gitMFCBusAnalysis.h" />
     <ClInclude Include="gitMFCBusAnalysisDlg.h" />
     <ClInclude Include="Resource.h" />
@@ -106,6 +107,7 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="CheckList.cpp" />
     <ClCompile Include="gitMFCBusAnalysis.cpp" />
     <ClCompile Include="gitMFCBusAnalysisDlg.cpp" />
     <ClCompile Include="stdafx.cpp">
