@@ -114,6 +114,7 @@ BOOL CgitMFCBusAnalysisDlg::OnInitDialog()
 	m_pMsgHead = NULL;
 	m_pOpenFileBuf = NULL;
 	m_CanIDIndexMax = 0;
+	
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
 
@@ -190,6 +191,7 @@ void CgitMFCBusAnalysisDlg::OnBnClickedRadioFilter()
 	m_Select = 0x02;
 	GetDlgItem(IDC_BUTTON3)->EnableWindow(TRUE);
 	GetDlgItem(IDC_BUTTON4)->EnableWindow(TRUE);
+	m_CheckListDlg.CheckListInit();
 }
 
 
@@ -342,6 +344,8 @@ void CgitMFCBusAnalysisDlg::OnFileBuf(char *p,UINT len)
 	}
 	showList();
 	m_CanIdList.SetCurSel(0);
+	m_CheckListDlg.m_checkListMax = m_CanIDIndexMax + 1 + IDC_CHECK2;
+	GetDlgItem(IDC_RADIO2)->EnableWindow(TRUE);
 }
 
 

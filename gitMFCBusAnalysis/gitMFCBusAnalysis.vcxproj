@@ -95,6 +95,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <None Include="ReadMe.txt" />
+    <None Include="resource.hm" />
     <None Include="res\gitMFCBusAnalysis.ico" />
     <None Include="res\gitMFCBusAnalysis.rc2" />
   </ItemGroup>

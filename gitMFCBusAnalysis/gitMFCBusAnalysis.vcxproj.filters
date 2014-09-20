@@ -22,6 +22,9 @@
     <None Include="res\gitMFCBusAnalysis.ico">
       <Filter>资源文件</Filter>
     </None>
+    <None Include="resource.hm">
+      <Filter>头文件</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="gitMFCBusAnalysis.h">
