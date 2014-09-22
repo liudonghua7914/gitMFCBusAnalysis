@@ -114,7 +114,6 @@ BOOL CgitMFCBusAnalysisDlg::OnInitDialog()
 	m_pMsgHead = NULL;
 	m_pOpenFileBuf = NULL;
 	m_CanIDIndexMax = 0;
-	
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
 
@@ -182,6 +181,7 @@ void CgitMFCBusAnalysisDlg::OnBnClickedRadioCheckClassfied()
 	m_Select = 0x01;
 	GetDlgItem(IDC_BUTTON3)->EnableWindow(FALSE);
 	GetDlgItem(IDC_BUTTON4)->EnableWindow(FALSE);
+	GetDlgItem(IDC_LIST2)->EnableWindow(TRUE);
 }
 
 
@@ -191,7 +191,8 @@ void CgitMFCBusAnalysisDlg::OnBnClickedRadioFilter()
 	m_Select = 0x02;
 	GetDlgItem(IDC_BUTTON3)->EnableWindow(TRUE);
 	GetDlgItem(IDC_BUTTON4)->EnableWindow(TRUE);
-	m_CheckListDlg.CheckListInit();
+	GetDlgItem(IDC_LIST2)->EnableWindow(FALSE);
+	
 }
 
 
@@ -273,6 +274,7 @@ void CgitMFCBusAnalysisDlg::checkIDName(char *p,UINT len)
 	m_pMsgNew = new (struct CAN_MSG);
 	if(m_pMsgNew)
 	{
+		m_pMsgNew->bShow = TRUE;
 		memset(m_pMsgNew->fullMsg,'\0',128);
 		memset(m_pMsgNew->idName,'\0',10);
 		memcpy(m_pMsgNew->idName,idname,idnamecnt);	
@@ -344,7 +346,10 @@ void CgitMFCBusAnalysisDlg::OnFileBuf(char *p,UINT len)
 	}
 	showList();
 	m_CanIdList.SetCurSel(0);
-	m_CheckListDlg.m_checkListMax = m_CanIDIndexMax + 1 + IDC_CHECK2;
+	m_CheckListDlg.m_checkListMax = m_CanIDIndexMax + 1 + IDC_CHECK1;
+	m_CheckListDlg.m_CheckListHead = m_pMsgHead;
+	m_CheckListDlg.m_ListArray = m_pCanList;
+	m_CheckListDlg.m_ListLen = m_CanIDIndexMax + 1;
 	GetDlgItem(IDC_RADIO2)->EnableWindow(TRUE);
 }
 

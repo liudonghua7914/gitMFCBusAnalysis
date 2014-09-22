@@ -7,13 +7,7 @@
 
 #include "CheckList.h"
 
-struct  CAN_MSG
-{
-	UINT index;
-	char idName[10];
-	char fullMsg[128];
-	struct  CAN_MSG *next;
-};
+
 
 // CgitMFCBusAnalysisDlg ¶Ô»°¿ò
 class CgitMFCBusAnalysisDlg : public CDialogEx
@@ -57,7 +51,6 @@ private:
 	UINT m_CanIDIndexMax;
 
 	struct  CAN_MSG *m_pCanList[100];
-	
 public:
 	afx_msg void OnBnClickedRadioCheckClassfied();
 	afx_msg void OnBnClickedRadioFilter();
