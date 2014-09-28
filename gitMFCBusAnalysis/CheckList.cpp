@@ -54,16 +54,16 @@ void CCheckList::DoDataExchange(CDataExchange* pDX)
 /*
 *	
 */
-	DWORD dwThreadID;
-	m_bKillThread = FALSE;
-	m_handleThread = CreateThread((LPSECURITY_ATTRIBUTES)NULL,
-		0,
-		(LPTHREAD_START_ROUTINE)ThreadProc,
-		this,
-		0,
-		&dwThreadID
-		);
-	m_handleEvent = CreateEvent(NULL,FALSE,TRUE,FALSE);
+	//DWORD dwThreadID;
+	//m_bKillThread = FALSE;
+	//m_handleThread = CreateThread((LPSECURITY_ATTRIBUTES)NULL,
+	//	0,
+	//	(LPTHREAD_START_ROUTINE)ThreadProc,
+	//	this,
+	//	0,
+	//	&dwThreadID
+	//	);
+	//m_handleEvent = CreateEvent(NULL,FALSE,TRUE,FALSE);
 
 	DDX_Control(pDX, IDC_CHECK102, m_checklistall);
 	DDX_Control(pDX, IDC_CHECK103, m_checklistdisall);
@@ -143,9 +143,11 @@ DWORD WINAPI CCheckList::ThreadProc(LPCVOID pContext)
 	CCheckList *pUpdateCheck = (CCheckList *)pContext;
 	UINT i = 0;
 	CButton* pBtn;
+	struct  CAN_MSG *pt;
+	BOOL bShow;
 	while (!pUpdateCheck->m_bKillThread)
 	{
-		WaitForSingleObject(pUpdateCheck->m_handleEvent,500);
+		WaitForSingleObject(pUpdateCheck->m_handleEvent,300);
 		for (i = IDC_CHECK1;i < IDC_CHECK1 + pUpdateCheck->m_ListLen;i++)
 		{
 			pBtn = (CButton*)(pUpdateCheck->GetDlgItem(i));
@@ -154,6 +156,21 @@ DWORD WINAPI CCheckList::ThreadProc(LPCVOID pContext)
 				pUpdateCheck->m_checkBuf[i - IDC_CHECK1] = pBtn->GetCheck();
 				if (pUpdateCheck->m_checkBuf[i - IDC_CHECK1])
 				{
+					bShow = TRUE;				
+				}
+				else
+				{
+					bShow = FALSE;
+				}
+
+				pt = pUpdateCheck->m_CheckListHead;
+				while(pt)
+				{
+					if ((i - IDC_CHECK1) == pt->index)
+					{
+						pt->bShow = bShow;
+					}
+					pt =pt->next;			
 				}
 			}
 		}

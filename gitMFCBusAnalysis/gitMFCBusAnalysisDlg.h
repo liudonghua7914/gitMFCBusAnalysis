@@ -7,7 +7,12 @@
 
 #include "CheckList.h"
 
-
+typedef struct
+{
+	BOOL bSelect;
+	BYTE SelectCnt;
+	BYTE listBuf[100];
+}T_LIST_INFO;
 
 // CgitMFCBusAnalysisDlg ¶Ô»°¿ò
 class CgitMFCBusAnalysisDlg : public CDialogEx
@@ -49,7 +54,8 @@ private:
 	struct  CAN_MSG *m_pMsgNew;
 	struct  CAN_MSG *m_pMsgCur;
 	UINT m_CanIDIndexMax;
-
+	T_LIST_INFO m_SelectList;
+	
 	struct  CAN_MSG *m_pCanList[100];
 public:
 	afx_msg void OnBnClickedRadioCheckClassfied();
@@ -59,4 +65,5 @@ public:
 	afx_msg void checkIDName(char *p,UINT len);
 	afx_msg void showList(void);
 	afx_msg void OnLbnSelchangeListCanIdChange();
+	afx_msg void OnLbnDblclkListSelect();
 };

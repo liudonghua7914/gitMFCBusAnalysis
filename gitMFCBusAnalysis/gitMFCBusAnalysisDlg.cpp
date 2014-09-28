@@ -73,6 +73,7 @@ BEGIN_MESSAGE_MAP(CgitMFCBusAnalysisDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_RADIO2, &CgitMFCBusAnalysisDlg::OnBnClickedRadioFilter)
 	ON_BN_CLICKED(IDC_BUTTON1, &CgitMFCBusAnalysisDlg::OnBnClickedButtonOpenFile)
 	ON_LBN_SELCHANGE(IDC_LIST2, &CgitMFCBusAnalysisDlg::OnLbnSelchangeListCanIdChange)
+	ON_LBN_DBLCLK(IDC_LIST2, &CgitMFCBusAnalysisDlg::OnLbnDblclkListSelect)
 END_MESSAGE_MAP()
 
 
@@ -114,6 +115,9 @@ BOOL CgitMFCBusAnalysisDlg::OnInitDialog()
 	m_pMsgHead = NULL;
 	m_pOpenFileBuf = NULL;
 	m_CanIDIndexMax = 0;
+	m_CheckListDlg.m_handleThread = NULL;
+	m_CheckListDlg.m_handleEvent = NULL;
+	memset(&m_SelectList,0,sizeof(m_SelectList));
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
 
@@ -172,6 +176,16 @@ void CgitMFCBusAnalysisDlg::OnBnClickedButtonCheckList()
 {
 	// TODO: 在此添加控件通知处理程序代码
 	m_CheckListDlg.DoModal();
+	m_CheckListDlg.m_bKillThread = TRUE;
+	if (m_CheckListDlg.m_handleThread)
+	{
+		CloseHandle(m_CheckListDlg.m_handleThread);
+	}
+
+	if (m_CheckListDlg.m_handleEvent)
+	{
+		CloseHandle(m_CheckListDlg.m_handleEvent);
+	}
 }
 
 
@@ -182,6 +196,10 @@ void CgitMFCBusAnalysisDlg::OnBnClickedRadioCheckClassfied()
 	GetDlgItem(IDC_BUTTON3)->EnableWindow(FALSE);
 	GetDlgItem(IDC_BUTTON4)->EnableWindow(FALSE);
 	GetDlgItem(IDC_LIST2)->EnableWindow(TRUE);
+	for (int i = IDC_STATIC1;i <= IDC_STATIC21;i++)
+	{
+		SetDlgItemText(i,__T(" "));
+	}
 }
 
 
@@ -189,10 +207,13 @@ void CgitMFCBusAnalysisDlg::OnBnClickedRadioFilter()
 {
 	// TODO: 在此添加控件通知处理程序代码
 	m_Select = 0x02;
-	GetDlgItem(IDC_BUTTON3)->EnableWindow(TRUE);
-	GetDlgItem(IDC_BUTTON4)->EnableWindow(TRUE);
-	GetDlgItem(IDC_LIST2)->EnableWindow(FALSE);
-	
+	GetDlgItem(IDC_BUTTON3)->EnableWindow(FALSE);
+	GetDlgItem(IDC_BUTTON4)->EnableWindow(FALSE);
+	m_CanDataList.ResetContent();
+	for (int i = IDC_STATIC1;i <= IDC_STATIC21;i++)
+	{
+		SetDlgItemText(i,__T(" "));
+	}
 }
 
 
@@ -274,7 +295,7 @@ void CgitMFCBusAnalysisDlg::checkIDName(char *p,UINT len)
 	m_pMsgNew = new (struct CAN_MSG);
 	if(m_pMsgNew)
 	{
-		m_pMsgNew->bShow = TRUE;
+		m_pMsgNew->bShow = FALSE;
 		memset(m_pMsgNew->fullMsg,'\0',128);
 		memset(m_pMsgNew->idName,'\0',10);
 		memcpy(m_pMsgNew->idName,idname,idnamecnt);	
@@ -393,24 +414,89 @@ void CgitMFCBusAnalysisDlg::OnLbnSelchangeListCanIdChange()
 	int copyLen = 0;
 	struct  CAN_MSG *pt;
 	struct  CAN_MSG *qt;
-	index = m_CanIdList.GetCurSel();
-	pt = m_pMsgHead;
-	m_CanDataList.ResetContent();
-	
-	pt = m_pMsgHead;
-	qt = m_pCanList[index];
-#if 1
-	while(pt)
+
+	if (0x01 == m_Select)
 	{
-		if(qt->index == pt->index)
+		index = m_CanIdList.GetCurSel();
+		pt = m_pMsgHead;
+		m_CanDataList.ResetContent();
+		pt = m_pMsgHead;
+		qt = m_pCanList[index];
+#if 1
+		while(pt)
 		{
-			copyLen = MultiByteToWideChar(CP_ACP,0,(char *)pt->fullMsg,-1,NULL,0);
-			pwDebug = new WCHAR[copyLen + 1];
-			pwDebug[copyLen] = '\0';
-			MultiByteToWideChar(CP_ACP,0,(char *)pt->fullMsg,-1,pwDebug,copyLen);
-			m_CanDataList.AddString(pwDebug);
-		}		
-		pt = pt->next;
+			if(qt->index == pt->index)
+			{
+				copyLen = MultiByteToWideChar(CP_ACP,0,(char *)pt->fullMsg,-1,NULL,0);
+				pwDebug = new WCHAR[copyLen + 1];
+				pwDebug[copyLen] = '\0';
+				MultiByteToWideChar(CP_ACP,0,(char *)pt->fullMsg,-1,pwDebug,copyLen);
+				m_CanDataList.AddString(pwDebug);
+			}		
+			pt = pt->next;
+		}
 	}
 #endif
+}
+
+
+void CgitMFCBusAnalysisDlg::OnLbnDblclkListSelect()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	int index = 0;
+	int PreIndex = 0xffff;
+	int i = 0;
+	int dlgcnt = IDC_STATIC1;
+	struct  CAN_MSG *pt;
+	struct  CAN_MSG *qt;
+	WCHAR *pwDebug = NULL;
+	int copyLen = 0;
+	if (0x02 == m_Select)
+	{	
+		m_CanDataList.ResetContent();
+		index = m_CanIdList.GetCurSel();
+		if (FALSE == m_SelectList.listBuf[index])
+		{
+			m_SelectList.listBuf[index] = TRUE;
+		}
+		else
+		{
+			m_SelectList.listBuf[index] = FALSE;
+		}
+		
+		for (i = IDC_STATIC1;i <= IDC_STATIC21;i++)
+		{
+			SetDlgItemText(i,__T(" "));
+		}
+
+		pt = m_pMsgHead;
+		while(pt)
+		{
+			pt->bShow = m_SelectList.listBuf[pt->index];
+			if (pt->bShow)
+			{
+				copyLen = MultiByteToWideChar(CP_ACP,0,(char *)pt->fullMsg,-1,NULL,0);
+				pwDebug = new WCHAR[copyLen + 1];
+				pwDebug[copyLen] = '\0';
+				MultiByteToWideChar(CP_ACP,0,(char *)pt->fullMsg,-1,pwDebug,copyLen);
+				m_CanDataList.AddString(pwDebug);
+			}
+			pt = pt->next;
+		}	
+
+
+		for (i = 0;i < m_CanIDIndexMax + 1;i++)
+		{
+			if (m_SelectList.listBuf[i])
+			{
+				qt = m_pCanList[i];
+				copyLen = MultiByteToWideChar(CP_ACP,0,(char *)qt->idName,-1,NULL,0);
+				pwDebug = new WCHAR[copyLen + 1];
+				pwDebug[copyLen] = '\0';
+				MultiByteToWideChar(CP_ACP,0,(char *)qt->idName,-1,pwDebug,copyLen);
+				SetDlgItemText(dlgcnt,pwDebug);
+				dlgcnt++;
+			}
+		}
+	}
 }
